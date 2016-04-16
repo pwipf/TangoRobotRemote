@@ -13,8 +13,10 @@ import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetAddress;
@@ -33,6 +35,8 @@ public class MainActivity extends AppCompatActivity{
     TextView mDumpText;
     ScrollView mDumpScroll;
     PrintWriter mWriter=null;
+    BufferedReader mReader;
+    Thread mListenerThread;
 
     AsyncTask mConnectTask;
     boolean mWasConnected;
@@ -55,6 +59,15 @@ public class MainActivity extends AppCompatActivity{
             connect();
 
 
+    }
+
+    void dumpTitle(final String t){
+        runOnUiThread(new Runnable(){
+            @Override
+            public void run(){
+                setTitle(t);
+            }
+        });
     }
 
     void dump(final String mess){
@@ -135,7 +148,11 @@ public class MainActivity extends AppCompatActivity{
                 }
             mSocket=null;
         }
-        setTitle("Disconnected");
+        if(mListenerThread != null){
+            mListenerThread.interrupt();
+            mListenerThread=null;
+        };
+        dumpTitle("Disconnected");
         mWasConnected=false;
     }
 
@@ -145,16 +162,9 @@ public class MainActivity extends AppCompatActivity{
             protected Boolean doInBackground(Void... params){
                 try{
                     InetAddress serverAddr=InetAddress.getByName(mIP);
-                    runOnUiThread(new Runnable(){
-                        @Override
-                        public void run(){
-                            setTitle("Trying to Connect to " + mIP + " :" + mPort);
-                        }
-                    });
-
+                    dumpTitle("Trying to Connect to " + mIP + " :" + mPort);
                     mSocket=new Socket();
-                    InetSocketAddress addr=new InetSocketAddress(serverAddr, mPort);
-                    mSocket.connect(addr, 2000);
+                    mSocket.connect(new InetSocketAddress(serverAddr, mPort), 2000);
                 } catch(UnknownHostException e1){
                     e1.printStackTrace();
                     mSocket=null;
@@ -164,19 +174,21 @@ public class MainActivity extends AppCompatActivity{
                     mSocket=null;
                     return false;
                 }
-
                 return mSocket.isConnected();
             }
 
             @Override
-            protected void onPostExecute(Boolean isCon){
-                if(isCon){
+            protected void onPostExecute(Boolean isConnected){
+                if(isConnected){
                     setTitle("Connected to " + mIP + " :" + mPort);
                     try{
                         mWriter=new PrintWriter(new BufferedWriter(
                                 new OutputStreamWriter(mSocket.getOutputStream())),
                                 true);
+                        mReader=new BufferedReader(new InputStreamReader(mSocket.getInputStream()));
                         mWasConnected=true;
+
+                        startListener();
                     } catch(IOException e){
                         setTitle("GetOutputStream Error");
                     }
@@ -186,6 +198,30 @@ public class MainActivity extends AppCompatActivity{
                 }
             }
         }.execute();
+    }
+
+    void startListener(){
+        mListenerThread=new Thread(new ReaderThread());
+        mListenerThread.start();
+    }
+
+    class ReaderThread implements Runnable {
+        public void run(){
+            while(!Thread.currentThread().isInterrupted()){
+                try{
+                    String s=mReader.readLine();
+                    if(s!=null){
+                        dump("   >"+s);
+                    }else{
+                        break;
+                    }
+                }catch(IOException e){
+                    dump("Reader()excep: "+e.getMessage());
+                    break;
+                }
+            }
+            disconnect();
+        }
     }
 
     @Override

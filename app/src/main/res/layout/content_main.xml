@@ -175,6 +175,7 @@
     </RelativeLayout>
 
     <LinearLayout
+        android:id="@+id/layoutTopButtons"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
@@ -214,8 +215,31 @@
             android:text="Add Target"
             android:background="@drawable/custbut"
             android:id="@+id/buttonSetTarget"/>
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/layoutNextButtons"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/layoutTopButtons"
+        android:layout_marginTop="40dp"
+        android:layout_alignParentRight="true">
 
+        <Button
+            android:onClick="onCommandClick"
+            android:layout_width="150dp"
+            android:layout_height="80dp"
+            android:text="Save ADF"
+            android:background="@drawable/custbut"
+            android:id="@+id/buttonSaveADF"/>
 
+        <Button
+            android:onClick="onCommandClick"
+            android:layout_width="150dp"
+            android:layout_height="80dp"
+            android:layout_marginLeft="20dp"
+            android:text="Learn ADF"
+            android:background="@drawable/custbut"
+            android:id="@+id/buttonLearnADF"/>
     </LinearLayout>
 
 </RelativeLayout>
