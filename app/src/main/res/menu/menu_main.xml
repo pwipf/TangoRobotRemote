@@ -4,7 +4,9 @@
       tools:context="com.example.neptune.remotecontrol.MainActivity">
     <item
         android:id="@+id/action_settings"
+        android:icon="@android:drawable/ic_input_add"
         android:orderInCategory="100"
         android:title="@string/action_settings"
-        app:showAsAction="never"/>
+        app:showAsAction="ifRoom"/>
 </menu>
+

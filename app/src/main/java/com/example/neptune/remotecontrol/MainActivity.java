@@ -3,18 +3,30 @@ package com.example.neptune.remotecontrol;
 // Remote Control App
 
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.SystemClock;
+import android.preference.PreferenceFragment;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -23,23 +35,37 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.RunnableFuture;
+import java.util.regex.Pattern;
 
-public class MainActivity extends AppCompatActivity{
+import static com.example.neptune.remotecontrol.StatusFragment.StatusItem;
+
+public class MainActivity extends AppCompatActivity implements SetADFNameDialog.CallbackListener{
 
     Socket mSocket;
 
     String mIP="0";
     int mPort=0;
 
-    EditText mEditIP, mEditPort;
     TextView mDumpText;
     ScrollView mDumpScroll;
     PrintWriter mWriter=null;
-    BufferedReader mReader;
+    DataInputStream mReader;
     Thread mListenerThread;
 
+    MapView mMapView;
+
+    int mTimerDelay=500;
+    int mTimerCount=0;
+
     AsyncTask mConnectTask;
-    boolean mWasConnected;
+
+    boolean mInPrefs;
+    boolean mConnecting;//while asynctask is going
+
+    Timer mTimer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
@@ -48,17 +74,12 @@ public class MainActivity extends AppCompatActivity{
         Toolbar toolbar=(Toolbar)findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        getFragmentManager().beginTransaction().add(R.id.frameLeft, new StatusFragment()).commit();
 
-        mEditIP=(EditText)findViewById(R.id.editIP);
-        mEditPort=(EditText)findViewById(R.id.editPort);
+        setTitle("Mission Control");
         mDumpText=(TextView)findViewById(R.id.dumpText);
         mDumpScroll=(ScrollView)findViewById(R.id.demoScroller);
-
-        readPrefs();
-        if(mWasConnected)
-            connect();
-
-
+        mMapView=(MapView)findViewById(R.id.imageMap);
     }
 
     void dumpTitle(final String t){
@@ -80,120 +101,121 @@ public class MainActivity extends AppCompatActivity{
         });
     }
 
-    void writePrefs(){
-        SharedPreferences pref=this.getPreferences(this.MODE_PRIVATE);
-        SharedPreferences.Editor editor=pref.edit();
-        editor.putString("IPAddress", mIP);
-        editor.putInt("Port", mPort);
-        editor.putBoolean("WasConnected", mWasConnected);
-        editor.apply();
-    }
 
     void readPrefs(){
-        SharedPreferences pref=this.getPreferences(this.MODE_PRIVATE);
-        mIP=pref.getString("IPAddress", "192.168.50.1");
-        mPort=pref.getInt("Port", 6000);
-        mWasConnected=pref.getBoolean("WasConnected", false);
-        mEditIP.setText(mIP);
-        mEditPort.setText(mPort + "");
-    }
-
-    public void onConnectClick(View view){
-        mIP=mEditIP.getText().toString();
-        mIP.replaceAll("\\s+", "");
-        mEditIP.setText(mIP);
-        String ps=mEditPort.getText().toString();
-        ps.replaceAll("\\s+", "");
-        try{
-            mPort=Integer.parseInt(ps);
-            mEditPort.setText(mPort + "");
-            setTitle("Connecting to " + mIP + " Port: " + mPort + " ...");
-            // save ip and port to preferences
-            writePrefs();
-            connect();
-        } catch(NumberFormatException e){
-            setTitle("Invalid Port");
-        }
+        SharedPreferences pref=PreferenceManager.getDefaultSharedPreferences(this);
+        mIP=pref.getString("pref_ip", "192.168.50.1");
+        mPort=Integer.parseInt(pref.getString("pref_port", "6000"));
     }
 
     public void onCommandClick(View view){
         String command=(((Button)view).getText().toString());
 
-        if(mSocket==null){
-            setTitle("Connect First");
-            return;
-        }
-        if(!mSocket.isConnected()){
-            setTitle("Not Connected");
-            return;
+        //if not connected don't do anything
+        if(mSocket == null || !mSocket.isConnected() || mListenerThread==null || !mListenerThread.isAlive()){
+            dump("~"+command);
         }
 
-        dump(command);
-        mWriter.println(command);
+        // connected, execute command
+        else{
+
+            switch(command){
+                case "Save ADF":
+                    showSetADFNameDialog();
+                    break;
+                default:
+                    Log.w("SEND","sending "+command+" "+mWriter.checkError());
+                    mWriter.println(command);
+            }
+        }
     }
 
-    public void onDisconnectClick(View view){
-        disconnect();
+
+
+    private void showSetADFNameDialog(){
+        mWriter.println("Stop");
+        new SetADFNameDialog().show(getFragmentManager(), "ADFNameDialog");
+    }
+    @Override
+    public void onAdfNameOk(String name, String uuid){
+        dump("Save ADF"+"%"+name);
+        mWriter.println("Save ADF"+"%"+name);
+    }
+
+    @Override
+    public void onAdfNameCancelled(){
     }
 
     void disconnect(){
-        if(mConnectTask!=null && mConnectTask.getStatus()==AsyncTask.Status.RUNNING){
+        Log.e("TAG","disconnect" );
+        if(mConnecting&&mConnectTask!=null)
             mConnectTask.cancel(true);
-        }
-        if(mSocket!=null){
+
+        if(mSocket != null){
             if(mSocket.isConnected())
                 try{
                     mSocket.close();
-                } catch(IOException e){
+                }catch(IOException e){
+                    e.printStackTrace();
                 }
             mSocket=null;
         }
-        if(mListenerThread != null){
-            mListenerThread.interrupt();
-            mListenerThread=null;
-        };
-        dumpTitle("Disconnected");
-        mWasConnected=false;
     }
 
     void connect(){
-        mConnectTask=new AsyncTask<Void, Void, Boolean>(){
+        readPrefs();
+        if(mConnecting){
+            dump("can't start another connect task");
+            return;
+        }
+        mConnectTask=new AsyncTask<Void,Void,Boolean>(){
             @Override
             protected Boolean doInBackground(Void... params){
+                mConnecting=true;
                 try{
                     InetAddress serverAddr=InetAddress.getByName(mIP);
-                    dumpTitle("Trying to Connect to " + mIP + " :" + mPort);
+                    dumpTitle("Mission Control   (Trying to Connect)");
                     mSocket=new Socket();
-                    mSocket.connect(new InetSocketAddress(serverAddr, mPort), 2000);
-                } catch(UnknownHostException e1){
-                    e1.printStackTrace();
+                    mSocket.connect(new InetSocketAddress(serverAddr, mPort), 400);
+                    return mSocket.isConnected();
+                }catch(UnknownHostException e){
+                    Log.w("CONNECTUNKNOWN", e.getMessage());
                     mSocket=null;
                     return false;
-                } catch(IOException e1){
-                    e1.printStackTrace();
+                }catch(IOException e){
+                    //Log.w("CONNECTIO", e.getMessage());
                     mSocket=null;
                     return false;
                 }
-                return mSocket.isConnected();
+            }
+
+            @Override
+            protected void onCancelled(Boolean aBoolean){
+                super.onCancelled(aBoolean);
+                Log.e("TAG","Connect task cancelled");
+                mConnecting=false;
+                mSocket=null;
             }
 
             @Override
             protected void onPostExecute(Boolean isConnected){
+                mConnecting=false;
                 if(isConnected){
-                    setTitle("Connected to " + mIP + " :" + mPort);
                     try{
-                        mWriter=new PrintWriter(new BufferedWriter(
-                                new OutputStreamWriter(mSocket.getOutputStream())),
-                                true);
-                        mReader=new BufferedReader(new InputStreamReader(mSocket.getInputStream()));
-                        mWasConnected=true;
-
-                        startListener();
-                    } catch(IOException e){
-                        setTitle("GetOutputStream Error");
+                        if(mSocket != null){
+                            mTimerCount=0;
+                            mTimerDelay=500;
+                            mWriter=new PrintWriter(new BufferedWriter(
+                                    new OutputStreamWriter(mSocket.getOutputStream())),
+                                    true);
+                            mReader=new DataInputStream(mSocket.getInputStream());
+                            startListener();
+                            dumpTitle("Mission Control   (Connected)");
+                        }
+                    }catch(IOException e){
+                        dump("GetOutputStream Error");
                     }
-                } else{
-                    setTitle("Failed to Connect");
+                }else{
                     mSocket=null;
                 }
             }
@@ -205,39 +227,227 @@ public class MainActivity extends AppCompatActivity{
         mListenerThread.start();
     }
 
-    class ReaderThread implements Runnable {
+    enum SendDataType{
+        POSITIONROTATION(Type.FLOAT, 4),
+        STRINGCOMMAND(Type.STRING, 0),
+        TARGETADDED(Type.FLOAT, 2),
+        TARGETSCLEARED(Type.NONE, 0);
+        Type type;
+        int numVals;
+        SendDataType(Type t, int n){
+            type=t;
+            numVals=n;
+        }
+        enum Type{STRING, FLOAT, NONE}
+    }
+
+
+    class ReaderThread implements Runnable{
         public void run(){
-            while(!Thread.currentThread().isInterrupted()){
+            //setListenerStatus(true);
+            float[] fdata;
+            int[] idata;
+            byte[] data;
+            Pattern pat=Pattern.compile("%");
+            readloop:
+            while(mSocket != null && mSocket.isConnected() && !Thread.currentThread().isInterrupted()){
                 try{
-                    String s=mReader.readLine();
-                    if(s!=null){
-                        dump("   >"+s);
-                    }else{
-                        break;
+                    // read code (SendDataType ordinal)
+                    int code=mReader.readInt();
+                    //check for error
+                    if(code<0 || code>SendDataType.values().length)
+                        return;
+
+                    switch(SendDataType.values()[code]){
+
+                        case STRINGCOMMAND:
+                            int len=mReader.readInt();
+                            if(len>100)
+                                return;
+                            data=new byte[len];
+                            mReader.readFully(data, 0, len);
+                            stringCommand(new String(data),pat);
+                            continue;
+
+                        case POSITIONROTATION:
+                            fdata=new float[4];
+                            for(int i=0; i<4; i++){
+                                fdata[i]=mReader.readFloat();
+                            }
+                            mMapView.setRobot(fdata[0], fdata[1], fdata[3]);
+                            continue;
+
+                        case TARGETADDED:
+                            fdata=new float[2];
+                            fdata[0]=mReader.readFloat();
+                            fdata[1]=mReader.readFloat();
+                            mMapView.addTarget(fdata[0],fdata[1],Color.MAGENTA);
+                            break;
+                        case TARGETSCLEARED:
+                            mMapView.clearTargets();
+                            break;
+                        default:
+                            Log.e("READTHREAD","default");
+                            return;
                     }
                 }catch(IOException e){
-                    dump("Reader()excep: "+e.getMessage());
-                    break;
+                    Log.e("TAG","Reader()excep: " + e.getMessage() );
+                    return;
                 }
             }
-            disconnect();
         }
+    }
+
+    private void stringCommand(String s, Pattern pat){
+        if(s != null){
+            if(s.contains("%")){
+                String[] key=pat.split(s, 5);
+                if(key.length != 2){
+                    dump("bad key");
+                    return;
+                }
+                for(StatusItem item : StatusItem.values()){
+                    if(item.string.equals(key[0])){
+
+                        switch(item){
+                            case POSITION:
+                            case ROTATION:
+                                setStatus(item,key[1]);
+                                break;
+                            case REMOTECON:
+                            case REMOTEIP:
+                            case REMOTEPORT:
+                            case REMOTERUN:
+                                break;
+                            default:
+                                setStatus(item,key[1]);
+                                //dump("     $" + s);
+                        }
+                        return;
+                    }
+                }
+            }else{
+                dump("   >" + s);
+            }
+        }
+    }
+
+    void setSocketStatus(String ip,int port,boolean connected){
+        setStatus(StatusItem.REMOTEIP,ip);
+        setStatus(StatusItem.REMOTEPORT,port+"");
+        setStatus(StatusItem.REMOTERUN,connected? "YES":"NO");
+        dumpTitle("Mission Control   "+(!connected? "(Trying to Connect)": "Connected to "+ip+" :"+port));
+    }
+    void setListenerStatus(boolean running){
+        setStatus(StatusItem.REMOTECON,running? "YES":"NO");
+    }
+    void setStatus(final StatusItem item, final String s){
+        runOnUiThread(new Runnable(){
+            @Override
+            public void run(){
+                StatusFragment.setStatusItem(item, s);
+            }
+        });
+    }
+
+    void startTimer(){
+        mTimer=new Timer();
+        mTimer.schedule(new TimerTask(){
+            @Override
+            public void run(){
+                mTimerCount++;
+                if(mTimerCount==20){
+                    mTimerDelay=2000;
+                    cancel();
+                    startTimer();
+                    return;
+                }
+                if(mSocket==null){
+                    connect();
+                    return;
+                }
+                boolean list=false,sock=false;
+                if(mListenerThread!=null){
+                    list=mListenerThread.isAlive();
+                    if(mSocket==null || mSocket.isClosed()){
+                        sock=false;
+                    }else{
+                        sock=true && list;
+                    }
+                }
+
+                setSocketStatus(mIP,mPort,sock);
+                setListenerStatus(list);
+
+                if(!list || !sock){
+                    Log.w("TIMER","restarting connection");
+                    restart();
+                }
+            }
+        }, 500, mTimerDelay);
+    }
+
+    private void restart(){
+        disconnect();
+        connect();
     }
 
     @Override
     protected void onResume(){
         super.onResume();
         readPrefs();
-        if(mWasConnected)
-            connect();
+        startTimer();
     }
 
     @Override
     protected void onPause(){
         super.onPause();
-        if(mSocket!=null && mSocket.isConnected())
-            mWasConnected=true;
-        writePrefs();
+        if(mTimer!=null)mTimer.cancel();
         disconnect();
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu){
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item){
+        int id=item.getItemId();
+
+        if(id == R.id.action_settings){
+
+            if(!mInPrefs){
+                getFragmentManager().beginTransaction().replace(R.id.frameLeft, new PrefsActivity()).addToBackStack(null).commit();
+                mInPrefs=true;
+            }else{
+                popSettings();
+            }
+
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void popSettings(){
+        if(mInPrefs){
+            mInPrefs=false;
+            getFragmentManager().popBackStack();
+        }
+    }
+
+    public static class PrefsActivity extends PreferenceFragment{
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState){
+            View v=super.onCreateView(inflater, container, savedInstanceState);
+
+            addPreferencesFromResource(R.xml.prefs);
+
+            return v;
+        }
+    }
 }
+
+

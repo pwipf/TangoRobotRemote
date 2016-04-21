@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <EditTextPreference
+        android:key="pref_ip"
+        android:title="IP Address"
+        android:summary="Tango IP Adress"
+        android:inputType="number|numberDecimal"
+        android:imeOptions="actionDone"
+        android:digits="0123456789."
+        android:defaultValue="192.168.1.4"/>
+    <EditTextPreference
+        android:key="pref_port"
+        android:title="Port"
+        android:imeOptions="actionDone"
+        android:selectAllOnFocus="true"
+        android:summary="Tango Listening Port"
+        android:inputType="number"
+        android:defaultValue="6242"/>
+
+</PreferenceScreen>

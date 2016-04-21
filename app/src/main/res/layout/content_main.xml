@@ -5,172 +5,136 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context="com.example.neptune.remotecontrol.MainActivity"
-    tools:showIn="@layout/activity_main"
-
     android:focusable="true"
     android:focusableInTouchMode="true"
+    android:paddingBottom="0dp"
+    android:paddingLeft="0dp"
+    android:paddingRight="0dp"
+    android:paddingTop="0dp"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+
+    tools:context="com.example.neptune.remotecontrol.MainActivity"
+    tools:showIn="@layout/activity_main"
     >
 
     <LinearLayout
-        android:id="@+id/linIP"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentLeft="true">
+        android:orientation="horizontal"
+        android:layout_marginLeft="7dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-        <TextView
-            android:layout_width="50dp"
-            android:layout_height="wrap_content"
-            android:text="IP: "
-            android:id="@+id/textIP"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentTop="true"/>
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_weight="0"
+            android:layout_width="200dp"
+            android:layout_height="match_parent">
 
-        <EditText
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:singleLine="true"
-            android:imeOptions="actionDone"
-            android:inputType="number|numberDecimal"
-            android:digits="0123456789."
-            android:text="192.168.43.1"
-            android:id="@+id/editIP"
-            android:selectAllOnFocus="false"
-            android:layout_alignParentTop="true"
-            android:layout_toRightOf="@+id/textIP"/>
+
+            <FrameLayout
+                android:id="@+id/frameLeft"
+                android:layout_marginTop="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+            </FrameLayout>
+
+            <ScrollView
+                android:id="@+id/demoScroller"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:clickable="false">
+
+                <TextView
+                    android:id="@+id/dumpText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="false"
+                    android:textIsSelectable="true"
+                    android:textSize="10sp"
+                    android:typeface="monospace"/>
+            </ScrollView>
+
+        </LinearLayout>
+
+        <FrameLayout
+            android:id="@+id/frameRight"
+            android:layout_weight="1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent">
+            <com.example.neptune.remotecontrol.MapView
+                android:id="@+id/imageMap"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+        </FrameLayout>
+
+
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/linPort"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/linIP"
-        android:layout_alignParentLeft="true">
 
-        <TextView
-            android:layout_width="50dp"
-            android:layout_height="wrap_content"
-            android:text="Port: "
-            android:id="@+id/textPort"
-            android:layout_alignParentLeft="true"
-            android:layout_below="@+id/textIP"/>
 
-        <EditText
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:singleLine="true"
-            android:inputType="number"
-            android:text="6242"
-            android:id="@+id/editPort"
-            android:selectAllOnFocus="true"
-            android:layout_below="@+id/editIP"
-            android:layout_toRightOf="@+id/textPort"/>
-    </LinearLayout>
 
-    <Button
-        android:text="Connect"
-        android:onClick="onConnectClick"
-        android:layout_width="150dp"
-        android:layout_height="80dp"
-        android:layout_marginTop="20dp"
-        android:layout_alignParentLeft="true"
-        android:layout_below="@+id/linPort"
-        android:id="@+id/buttonConnect"
-        android:background="@drawable/custbut"/>
 
-    <Button
-        android:text="Disconnect"
-        android:onClick="onDisconnectClick"
-        android:layout_width="150dp"
-        android:layout_height="80dp"
-        android:layout_below="@+id/buttonConnect"
-        android:layout_marginTop="20dp"
-        android:layout_alignParentLeft="true"
-        android:id="@+id/buttonDisonnect"
-        android:background="@drawable/custbut"/>
-
-    <ScrollView
-        android:id="@+id/demoScroller"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/buttonDisonnect"
-        android:layout_marginTop="30dp"
-        android:layout_marginBottom="20dp"
-        android:clickable="false">
-
-        <TextView
-            android:id="@+id/dumpText"
-            android:textIsSelectable="true"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:typeface="monospace"
-            android:clickable="false"/>
-    </ScrollView>
 
     <RelativeLayout
-        android:layout_width="600dp"
+        android:layout_width="360dp"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true">
+        android:layout_marginBottom="7dp"
+        android:layout_marginRight="7dp"
+        android:layout_alignParentEnd="true">
 
         <Button
             android:id="@+id/buttonForward"
-            android:onClick="onCommandClick"
-            android:layout_width="200dp"
-            android:layout_height="100dp"
-            android:background="@drawable/custbuttop"
-            android:layout_alignLeft="@+id/buttonStop"
+            android:layout_width="120dp"
+            android:layout_height="60dp"
+            android:layout_alignEnd="@+id/buttonStop"
             android:layout_alignParentTop="true"
-            android:layout_alignRight="@+id/buttonStop"
+            android:layout_alignStart="@+id/buttonStop"
+            android:background="@drawable/custbuttop"
+            android:onClick="onCommandClick"
             android:text="Forward"/>
 
         <Button
             android:id="@+id/buttonLeft"
-            android:onClick="onCommandClick"
-            android:layout_width="200dp"
-            android:layout_height="100dp"
-            android:background="@drawable/custbutleft"
+            android:layout_width="120dp"
+            android:layout_height="50dp"
             android:layout_alignBottom="@+id/buttonStop"
             android:layout_alignTop="@+id/buttonStop"
             android:layout_toLeftOf="@+id/buttonStop"
+            android:background="@drawable/custbutleft"
+            android:onClick="onCommandClick"
             android:text="Left"/>
 
         <Button
             android:id="@+id/buttonStop"
-            android:onClick="onCommandClick"
-            android:layout_width="200dp"
-            android:layout_height="100dp"
-            android:background="@drawable/custbutmiddle"
+            android:layout_width="120dp"
+            android:layout_height="50dp"
             android:layout_below="@+id/buttonForward"
             android:layout_centerHorizontal="true"
+            android:background="@drawable/custbutmiddle"
+            android:onClick="onCommandClick"
             android:text="Stop"/>
 
         <Button
             android:id="@+id/buttonRight"
-            android:onClick="onCommandClick"
-            android:layout_width="200dp"
-            android:layout_height="100dp"
-            android:background="@drawable/custbutright"
+            android:layout_width="120dp"
+            android:layout_height="50dp"
             android:layout_alignBottom="@+id/buttonStop"
             android:layout_alignTop="@+id/buttonStop"
             android:layout_toRightOf="@+id/buttonStop"
+            android:background="@drawable/custbutright"
+            android:onClick="onCommandClick"
             android:text="Right"/>
 
         <Button
             android:id="@+id/buttonReverse"
-            android:onClick="onCommandClick"
-            android:layout_width="200dp"
-            android:layout_height="100dp"
-            android:background="@drawable/custbutbottom"
+            android:layout_width="120dp"
+            android:layout_height="50dp"
             android:layout_alignLeft="@+id/buttonStop"
             android:layout_alignRight="@+id/buttonStop"
             android:layout_below="@+id/buttonStop"
+            android:background="@drawable/custbutbottom"
+            android:onClick="onCommandClick"
             android:text="Reverse"/>
     </RelativeLayout>
 
@@ -178,68 +142,63 @@
         android:id="@+id/layoutTopButtons"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentRight="true">
+        android:layout_alignParentRight="true"
+        android:layout_marginTop="5dp"
+        android:layout_alignParentTop="true">
 
         <Button
-            android:onClick="onCommandClick"
-            android:layout_width="150dp"
-            android:layout_height="80dp"
-            android:text="Go To Target"
+            android:id="@+id/buttonGo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:background="@drawable/custbut"
-            android:id="@+id/buttonGo"/>
+            android:onClick="onCommandClick"
+            android:text="Go To Target"/>
 
         <Button
-            android:onClick="onCommandClick"
-            android:layout_width="150dp"
-            android:layout_height="80dp"
-            android:layout_marginLeft="20dp"
-            android:text="Stop Everything"
+            android:id="@+id/buttonStopEverything"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
             android:background="@drawable/custbut"
-            android:id="@+id/buttonStopEverything"/>
+            android:onClick="onCommandClick"
+            android:text="Stop Everything"/>
 
         <Button
-            android:onClick="onCommandClick"
-            android:layout_width="150dp"
-            android:layout_height="80dp"
-            android:layout_marginLeft="20dp"
-            android:text="Clear Targets"
+            android:id="@+id/buttonClearTargets"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
             android:background="@drawable/custbut"
-            android:id="@+id/buttonClearTargets"/>
+            android:onClick="onCommandClick"
+            android:text="Clear Targets"/>
 
         <Button
-            android:onClick="onCommandClick"
-            android:layout_width="150dp"
-            android:layout_height="80dp"
-            android:layout_marginLeft="20dp"
-            android:text="Add Target"
+            android:id="@+id/buttonSetTarget"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
             android:background="@drawable/custbut"
-            android:id="@+id/buttonSetTarget"/>
+            android:onClick="onCommandClick"
+            android:text="Add Target"/>
+        <Button
+            android:id="@+id/buttonSaveADF"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/custbut"
+            android:layout_marginLeft="10dp"
+            android:onClick="onCommandClick"
+            android:text="Save ADF"/>
+
+        <Button
+            android:id="@+id/buttonLearnADF"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:background="@drawable/custbut"
+            android:onClick="onCommandClick"
+            android:text="Learn ADF"/>
     </LinearLayout>
-    <LinearLayout
-        android:id="@+id/layoutNextButtons"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/layoutTopButtons"
-        android:layout_marginTop="40dp"
-        android:layout_alignParentRight="true">
 
-        <Button
-            android:onClick="onCommandClick"
-            android:layout_width="150dp"
-            android:layout_height="80dp"
-            android:text="Save ADF"
-            android:background="@drawable/custbut"
-            android:id="@+id/buttonSaveADF"/>
-
-        <Button
-            android:onClick="onCommandClick"
-            android:layout_width="150dp"
-            android:layout_height="80dp"
-            android:layout_marginLeft="20dp"
-            android:text="Learn ADF"
-            android:background="@drawable/custbut"
-            android:id="@+id/buttonLearnADF"/>
-    </LinearLayout>
 
 </RelativeLayout>
