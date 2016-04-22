@@ -166,7 +166,7 @@
             android:layout_height="wrap_content"
             android:background="@drawable/custbut"
             android:onClick="onCommandClick"
-            android:text="Go To Target"/>
+            android:text="Start Path"/>
 
         <Button
             android:id="@+id/buttonStopEverything"
@@ -175,7 +175,7 @@
             android:layout_marginLeft="10dp"
             android:background="@drawable/custbut"
             android:onClick="onCommandClick"
-            android:text="Stop Everything"/>
+            android:text="End Path"/>
 
         <Button
             android:id="@+id/buttonClearTargets"
@@ -184,7 +184,7 @@
             android:layout_marginLeft="10dp"
             android:background="@drawable/custbut"
             android:onClick="onCommandClick"
-            android:text="Clear Targets"/>
+            android:text="Trace Path Forward"/>
 
         <Button
             android:id="@+id/buttonSetTarget"
@@ -193,7 +193,7 @@
             android:layout_marginLeft="10dp"
             android:background="@drawable/custbut"
             android:onClick="onCommandClick"
-            android:text="Add Target"/>
+            android:text="Trace Path Reverse"/>
         <Button
             android:id="@+id/buttonSaveADF"
             android:layout_width="wrap_content"

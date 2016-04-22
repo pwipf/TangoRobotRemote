@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
         setSupportActionBar(toolbar);
 
         getFragmentManager().beginTransaction().add(R.id.frameLeft, new StatusFragment()).commit();
-
+        findViewById(android.R.id.content).setKeepScreenOn(true);
         setTitle("Mission Control");
         mDumpText=(TextView)findViewById(R.id.dumpText);
         mDumpScroll=(ScrollView)findViewById(R.id.demoScroller);
