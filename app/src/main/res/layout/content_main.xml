@@ -81,7 +81,7 @@
         <Button
             android:id="@+id/buttonForward"
             android:layout_width="120dp"
-            android:layout_height="60dp"
+            android:layout_height="70dp"
             android:layout_alignEnd="@+id/buttonStop"
             android:layout_alignParentTop="true"
             android:layout_alignStart="@+id/buttonStop"
@@ -99,6 +99,16 @@
             android:background="@drawable/custbutleft"
             android:onClick="onCommandClick"
             android:text="Left"/>
+
+        <Button
+            android:id="@+id/buttonHalfLeft"
+            android:layout_width="105dp"
+            android:layout_height="55dp"
+            android:layout_alignBottom="@+id/buttonForward"
+            android:layout_toLeftOf="@+id/buttonStop"
+            android:background="@drawable/custbuttopleft"
+            android:onClick="onCommandClick"
+            android:text="Leftish"/>
 
         <Button
             android:id="@+id/buttonStop"
@@ -120,6 +130,15 @@
             android:background="@drawable/custbutright"
             android:onClick="onCommandClick"
             android:text="Right"/>
+        <Button
+            android:id="@+id/buttonHalfRight"
+            android:layout_width="105dp"
+            android:layout_height="55dp"
+            android:layout_alignBottom="@+id/buttonForward"
+            android:layout_toRightOf="@+id/buttonStop"
+            android:background="@drawable/custbuttopright"
+            android:onClick="onCommandClick"
+            android:text="Rightish"/>
 
         <Button
             android:id="@+id/buttonReverse"

@@ -224,9 +224,9 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     protected void onSizeChanged(int w, int h, int oldw, int oldh){
         super.onSizeChanged(w, h, oldw, oldh);
         mSize=new PointF(w, h);
-        mMainAct.dump(w + " x " + h);
+        //mMainAct.dump(w + " x " + h);
         mAspect=mSize.x/mSize.y;
-        mMainAct.dump("aspect: " + mAspect);
+        //mMainAct.dump("aspect: " + mAspect);
         setExtCenterRot(2.5f, 2.5f, 0, 0, 5);
 
 
