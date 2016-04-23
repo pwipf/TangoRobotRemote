@@ -56,7 +56,7 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     ArrayList<Integer> mTargetCol=new ArrayList<>();
     //ArrayList<PointF> mDepthPts=new ArrayList<>();
 
-    static final int NDEPTHPTS=50;
+    static final int NDEPTHPTS=9 ;
     PointF[] mDepthPts=new PointF[NDEPTHPTS];
     int mDepthIndex=0;
 
@@ -110,7 +110,8 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
             float[] fpt={pt.x,pt.y};
             mRobotModel.mapPoints(fpt);
             mWorldToScreen.mapPoints(fpt);
-            canvas.drawCircle(fpt[0],fpt[1], 7, xAxisPaint);
+            paint[4].setColor(Color.rgb(0,150,100));
+            canvas.drawCircle(fpt[0],fpt[1], 70/NDEPTHPTS, paint[4]);
         }
     }
 
@@ -252,6 +253,9 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
         paint[3].setStyle(Paint.Style.STROKE);
         paint[3].setStrokeWidth(2);
         paint[3].setColor(Color.BLUE);
+        paint[4].setStyle(Paint.Style.STROKE);
+        paint[4].setStrokeWidth(2);
+        paint[4].setColor(Color.rgb(200,100,40));
         xAxisPaint.setColor(Color.RED);
         xAxisPaint.setStrokeWidth(2);
         zAxisPaint.setColor(Color.BLUE);

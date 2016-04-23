@@ -328,7 +328,18 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
                             case REMOTEPORT:
                             case REMOTERUN:
                                 break;
-                            default:
+                            case LEARNING:
+                                final String fs=key[1];
+                                runOnUiThread(new Runnable(){
+                                    @Override
+                                    public void run(){
+                                        if(fs.equals("YES"))
+                                            ((Button)findViewById(R.id.buttonLearnADF)).setText("Cancel Learn");
+                                        else
+                                            ((Button)findViewById(R.id.buttonLearnADF)).setText("Learn ADF");
+                                    }
+                                });
+                           default:
                                 setStatus(item,key[1]);
                                 //dump("     $" + s);
                         }
