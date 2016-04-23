@@ -14,6 +14,8 @@ import android.view.ScaleGestureDetector;
 import android.view.View;
 
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by Magpie on 4/17/2016.
@@ -50,6 +52,16 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     float mRoboPts[]={1, 1, -1, 1, -1, 1, 0, -1, 0, -1, 1, 1, -1.1f, .4f, 1.1f, .4f,
             -1.1f, .9f, -1.1f, -.1f, 1.1f, .9f, 1.1f, -.1f};
 
+    ArrayList<PointColor> mTargets=new ArrayList<>();
+    ArrayList<Integer> mTargetCol=new ArrayList<>();
+    //ArrayList<PointF> mDepthPts=new ArrayList<>();
+
+    static final int NDEPTHPTS=50;
+    PointF[] mDepthPts=new PointF[NDEPTHPTS];
+    int mDepthIndex=0;
+
+    private static final int NUM_PAINTS=10;
+    Paint paint[]=new Paint[NUM_PAINTS];
 
     class PointColor{
         PointF pt;
@@ -61,15 +73,45 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
         }
     }
 
-    ArrayList<PointColor> mTargets=new ArrayList<>();
-    ArrayList<Integer> mTargetCol=new ArrayList<>();
 
-    private static final int NUM_PAINTS=10;
-    Paint paint[]=new Paint[NUM_PAINTS];
 
     public void addTarget(float x, float y, Integer col){
         mTargets.add(new PointColor(new PointF(x, y), col));
         postInvalidate();
+    }
+
+    public void addDepthPt(float u,float v,float z){//float[3]
+        PointF pt=new PointF(); //in world coords, want to show z dist in front of robot, with u,v = .5 (middle of camera), will need some calibration
+        pt.y=z*10;
+        pt.x=(u-.5f)*10; //0 for uv .5
+        mDepthPts[mDepthIndex]=new PointF(pt.x,pt.y);
+        mDepthIndex++;if(mDepthIndex==NDEPTHPTS)mDepthIndex=0;
+
+        //schedule timer to remove point in 1 second
+        //new Timer().schedule(new RemoveDepthPtTask(index),1000);
+    }
+    class RemoveDepthPtTask extends TimerTask{
+        int index;
+        RemoveDepthPtTask(int i){index=i;}
+        public void run(){
+            removeDepthPt(index);
+        }
+    }
+
+    private void removeDepthPt(int index){
+       // mDepthPts.remove(index);
+    }
+
+    private void drawDepthPts(Canvas canvas){
+
+        //PointF[] pts=mDepthPts.toArray(new PointF[mDepthPts.size()]);
+
+        for(PointF pt:mDepthPts){
+            float[] fpt={pt.x,pt.y};
+            mRobotModel.mapPoints(fpt);
+            mWorldToScreen.mapPoints(fpt);
+            canvas.drawCircle(fpt[0],fpt[1], 7, xAxisPaint);
+        }
     }
 
     public void clearTargets(){
@@ -109,6 +151,7 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
             canvas.drawText(""+(i+1),dp.x+5,dp.y+5,zAxisPaint);
         }
 
+        drawDepthPts(canvas);
     }
 
     void drawAxex(Canvas canvas){
@@ -197,6 +240,8 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
         //this.setOnTouchListener(this);
         for(int i=0; i<NUM_PAINTS; i++)
             paint[i]=new Paint();
+        for(int i=0;i<NDEPTHPTS;i++)
+            mDepthPts[i]=new PointF(0,0);
         paint[0].setStyle(Paint.Style.FILL);
         paint[0].setColor(Color.RED);
         paint[1].setColor(Color.rgb(0, 180, 0));

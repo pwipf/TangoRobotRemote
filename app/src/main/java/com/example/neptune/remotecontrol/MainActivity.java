@@ -231,7 +231,8 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
         POSITIONROTATION(Type.FLOAT, 4),
         STRINGCOMMAND(Type.STRING, 0),
         TARGETADDED(Type.FLOAT, 2),
-        TARGETSCLEARED(Type.NONE, 0);
+        TARGETSCLEARED(Type.NONE, 0),
+        DEPTHDATA(Type.FLOAT,3);
         Type type;
         int numVals;
         SendDataType(Type t, int n){
@@ -245,9 +246,8 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
     class ReaderThread implements Runnable{
         public void run(){
             //setListenerStatus(true);
-            float[] fdata;
-            int[] idata;
-            byte[] data;
+            float[] fdata=null;
+            byte[] sdata=null;
             Pattern pat=Pattern.compile("%");
             readloop:
             while(mSocket != null && mSocket.isConnected() && !Thread.currentThread().isInterrupted()){
@@ -258,33 +258,42 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
                     if(code<0 || code>SendDataType.values().length)
                         return;
 
+                    switch(SendDataType.values()[code].type){
+                        case STRING:
+                            int len=mReader.readInt();
+                            if(len>100)//probably error
+                                return;
+                            sdata=new byte[len];
+                            mReader.readFully(sdata, 0, len);
+                            break;
+
+                        case FLOAT:
+                            int n=SendDataType.values()[code].numVals;
+                            fdata=new float[n];
+                            for(int i=0; i<n; i++){
+                                fdata[i]=mReader.readFloat();
+                            }
+                            break;
+                    }
+
                     switch(SendDataType.values()[code]){
 
                         case STRINGCOMMAND:
-                            int len=mReader.readInt();
-                            if(len>100)
-                                return;
-                            data=new byte[len];
-                            mReader.readFully(data, 0, len);
-                            stringCommand(new String(data),pat);
+                            stringCommand(new String(sdata),pat);
                             continue;
 
                         case POSITIONROTATION:
-                            fdata=new float[4];
-                            for(int i=0; i<4; i++){
-                                fdata[i]=mReader.readFloat();
-                            }
-                            mMapView.setRobot(fdata[0], fdata[1], fdata[3]);
+                           mMapView.setRobot(fdata[0], fdata[1], fdata[3]);
                             continue;
 
                         case TARGETADDED:
-                            fdata=new float[2];
-                            fdata[0]=mReader.readFloat();
-                            fdata[1]=mReader.readFloat();
                             mMapView.addTarget(fdata[0],fdata[1],Color.MAGENTA);
                             break;
                         case TARGETSCLEARED:
                             mMapView.clearTargets();
+                            break;
+                        case DEPTHDATA:
+                            mMapView.addDepthPt(fdata[0],fdata[1],fdata[2]);
                             break;
                         default:
                             Log.e("READTHREAD","default");
