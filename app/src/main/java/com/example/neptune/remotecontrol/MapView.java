@@ -55,10 +55,11 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     ArrayList<PointColor> mTargets=new ArrayList<>();
     ArrayList<Integer> mTargetCol=new ArrayList<>();
     //ArrayList<PointF> mDepthPts=new ArrayList<>();
-
-    static final int NDEPTHPTS=9 ;
+    static final int NDEPTHPTS=9*9 ;
     PointF[] mDepthPts=new PointF[NDEPTHPTS];
+    float[] mDepthValue=new float[NDEPTHPTS];
     int mDepthIndex=0;
+
 
     private static final int NUM_PAINTS=10;
     Paint paint[]=new Paint[NUM_PAINTS];
@@ -82,10 +83,13 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
 
     public void addDepthPt(float u,float v,float z){//float[3]
         PointF pt=new PointF(); //in world coords, want to show z dist in front of robot, with u,v = .5 (middle of camera), will need some calibration
-        pt.y=z*10;
-        pt.x=(u-.5f)*10; //0 for uv .5
+        pt.y=((1-v)-.5f)*14+10;
+        pt.x=((u-.5f)*14)*(1+((1-v)*.4f)); //0 for uv .5
         mDepthPts[mDepthIndex]=new PointF(pt.x,pt.y);
+        mDepthValue[mDepthIndex]=z;
         mDepthIndex++;if(mDepthIndex==NDEPTHPTS)mDepthIndex=0;
+
+        //Log.e("NUM",pt.x+" "+pt.y);
 
         //schedule timer to remove point in 1 second
         //new Timer().schedule(new RemoveDepthPtTask(index),1000);
@@ -103,17 +107,21 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     }
 
     private void drawDepthPts(Canvas canvas){
-
-        //PointF[] pts=mDepthPts.toArray(new PointF[mDepthPts.size()]);
-
-        for(PointF pt:mDepthPts){
-            float[] fpt={pt.x,pt.y};
+        for(int i=0;i<NDEPTHPTS;i++){
+            float[] fpt={mDepthPts[i].x,mDepthPts[i].y};
             mRobotModel.mapPoints(fpt);
-            mWorldToScreen.mapPoints(fpt);
+            mWorldToScreen .mapPoints(fpt);
             paint[4].setColor(Color.rgb(0,150,100));
-            canvas.drawCircle(fpt[0],fpt[1], 70/NDEPTHPTS, paint[4]);
+            float d=mDepthValue[i]*5;
+            if(d==0) {
+                d = 1;
+                paint[4].setColor(Color.BLACK);
+            }
+            else
+                d=Math.min(Math.max(d,2),14);
+            canvas.drawCircle(fpt[0],fpt[1], d, paint[4]);
         }
-    }
+   }
 
     public void clearTargets(){
         mTargets.clear();
