@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -46,19 +47,28 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     Paint mRobotPaint=new Paint();
     Paint mWheelPaint=new Paint();
     Paint mBlackPaint=new Paint();
-    PointF mRobotLoc=new PointF();
+    Paint obstPaint=new Paint();
     Matrix mRobotModel=new Matrix();
-    float mRobotRot=0;
-    float mRoboPts[]={1, 1, -1, 1, -1, 1, 0, -1, 0, -1, 1, 1, -1.1f, .4f, 1.1f, .4f,
+    float mRoboX,mRoboY,mRoboRot;
+    float[] mRoboPts={1, 1, -1, 1, -1, 1, 0, -1, 0, -1, 1, 1, -1.1f, .4f, 1.1f, .4f,
             -1.1f, .9f, -1.1f, -.1f, 1.1f, .9f, 1.1f, -.1f};
+    float[] mRoboPtsBuf=new float[mRoboPts.length];
 
     ArrayList<PointColor> mTargets=new ArrayList<>();
     ArrayList<Integer> mTargetCol=new ArrayList<>();
     //ArrayList<PointF> mDepthPts=new ArrayList<>();
     static final int NDEPTHPTS=9*9 ;
-    PointF[] mDepthPts=new PointF[NDEPTHPTS];
+    float[] mDepthPts=new float[NDEPTHPTS*2];
+    float[] mDepthPtsBuf=new float[NDEPTHPTS*2];
     float[] mDepthValue=new float[NDEPTHPTS];
     int mDepthIndex=0;
+
+    static final int NOBSTPTS=2000;
+    float[] obstPt = new float[NOBSTPTS];
+    float[] obstBuf = new float[NOBSTPTS];
+    int nObstPt,nObstPtUsed;
+
+    boolean mFirstPerson;
 
 
     private static final int NUM_PAINTS=10;
@@ -75,6 +85,48 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     }
 
 
+    public void clearObstacles(){
+        nObstPt=0;
+        nObstPtUsed=0;
+        postInvalidate();
+    }
+
+    public void addObstPt(float x,float z){
+        float[] t={x,z};
+        //mRobotModelInverse.mapPoints(t);
+//        mWorldInverse.mapPoints(t);
+        //mRobotModelInverse.mapPoints(t);
+
+        //search if point is already in list
+        boolean found=false;
+        float thresh=.07f;
+        for(int i=0;i<obstPt.length/2;i++){
+            float tx=obstPt[i*2];
+            float ty=obstPt[i*2+1];
+            if(Math.abs(tx-t[0])<thresh && Math.abs(ty-t[1])<thresh){
+                found=true;
+                break;
+            }
+        }
+
+        if(!found) {
+            obstPt[nObstPt * 2] = t[0];
+            obstPt[nObstPt * 2 + 1] = t[1];
+            nObstPt++;
+            if (nObstPt == obstPt.length / 2)
+                nObstPt = 0;
+
+            nObstPtUsed++;
+            nObstPtUsed=Math.min(nObstPtUsed,obstPt.length/2);
+        }
+    }
+    private void drawObstPts(Canvas canvas){
+        mWorldToScreen.mapPoints(obstBuf,obstPt);
+        for(int i=0;i<nObstPtUsed;i++){
+            canvas.drawCircle(obstBuf[i*2],obstBuf[i*2+1],4,obstPaint);
+        }
+        //canvas.drawPoints(obstBuf,obstPaint);
+    }
 
     public void addTarget(float x, float y, Integer col){
         mTargets.add(new PointColor(new PointF(x, y), col));
@@ -82,12 +134,17 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     }
 
     public void addDepthPt(float u,float v,float z){//float[3]
-        PointF pt=new PointF(); //in world coords, want to show z dist in front of robot, with u,v = .5 (middle of camera), will need some calibration
-        pt.y=((1-v)-.5f)*14+10;
-        pt.x=((u-.5f)*14)*(1+((1-v)*.4f)); //0 for uv .5
-        mDepthPts[mDepthIndex]=new PointF(pt.x,pt.y);
+        float perspFact=.5f;
+        float gridOffset=.8f;
+        v=1-v;
+        PointF pt=new PointF();
+        pt.y=(v-.5f) +gridOffset;
+        pt.x=(u-.5f)*(1+ v*perspFact);
+        mDepthPts[mDepthIndex*2]=pt.x;
+        mDepthPts[mDepthIndex*2+1]=pt.y;
         mDepthValue[mDepthIndex]=z;
-        mDepthIndex++;if(mDepthIndex==NDEPTHPTS)mDepthIndex=0;
+        mDepthIndex++; if(mDepthIndex==mDepthValue.length) mDepthIndex=0;
+        postInvalidate();
 
         //Log.e("NUM",pt.x+" "+pt.y);
 
@@ -107,10 +164,9 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     }
 
     private void drawDepthPts(Canvas canvas){
-        for(int i=0;i<NDEPTHPTS;i++){
-            float[] fpt={mDepthPts[i].x,mDepthPts[i].y};
-            mRobotModel.mapPoints(fpt);
-            mWorldToScreen .mapPoints(fpt);
+        mRobotModel.mapPoints(mDepthPtsBuf,mDepthPts);
+        mWorldToScreen.mapPoints(mDepthPtsBuf);
+        for(int i=0;i<mDepthValue.length;i++){
             paint[4].setColor(Color.rgb(0,150,100));
             float d=mDepthValue[i]*5;
             if(d==0) {
@@ -119,7 +175,7 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
             }
             else
                 d=Math.min(Math.max(d,2),14);
-            canvas.drawCircle(fpt[0],fpt[1], d, paint[4]);
+            canvas.drawCircle(mDepthPtsBuf[i*2],mDepthPtsBuf[i*2+1], d, paint[4]);
         }
    }
 
@@ -129,18 +185,24 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     }
 
     public void setRobot(float x, float y, float rot){
-        mRobotLoc.x=x;
-        mRobotLoc.y=y;
-        mRobotRot=rot;
-
         rot*=180/Math.PI;
         rot=rot - 90;
 
-        mRobotModel=new Matrix();
-        mRobotModel.setScale(.1f, .1f);
-        mRobotModel.postRotate(rot);
-        mRobotModel.postTranslate(x, y);
+        float dr=rot-mRoboRot;
+        mRoboRot=rot;
 
+        float dx=x-mRoboX;
+        float dy=y-mRoboY;
+        mRoboX=x;
+        mRoboY=y;
+
+        if(!mFirstPerson){
+            mRobotModel.preRotate(dr);
+            mRobotModel.postTranslate(dx, dy);
+        }
+        else{
+
+        }
         postInvalidate();
     }
 
@@ -161,6 +223,7 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
         }
 
         drawDepthPts(canvas);
+        drawObstPts(canvas);
     }
 
     void drawAxex(Canvas canvas){
@@ -174,13 +237,12 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
 
     void drawRobot(Canvas canvas){
         float[] dot={0, 0};
-        float[] pts=new float[mRoboPts.length];
-        mRobotModel.mapPoints(pts, mRoboPts);
+        mRobotModel.mapPoints(mRoboPtsBuf, mRoboPts);
         mRobotModel.mapPoints(dot);
-        mWorldToScreen.mapPoints(pts);
+        mWorldToScreen.mapPoints(mRoboPtsBuf);
         mWorldToScreen.mapPoints(dot);
-        canvas.drawLines(pts, 0, 16, mRobotPaint);
-        canvas.drawLines(pts, 16, 8, mWheelPaint);
+        canvas.drawLines(mRoboPtsBuf, 0, 16, mRobotPaint);
+        canvas.drawLines(mRoboPtsBuf, 16, 8, mWheelPaint);
         canvas.drawCircle(dot[0], dot[1], 5, zAxisPaint);
     }
 
@@ -249,8 +311,8 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
         //this.setOnTouchListener(this);
         for(int i=0; i<NUM_PAINTS; i++)
             paint[i]=new Paint();
-        for(int i=0;i<NDEPTHPTS;i++)
-            mDepthPts[i]=new PointF(0,0);
+        for(int i=0;i<mRoboPts.length;i++)
+            mRoboPts[i]*=.1f;
         paint[0].setStyle(Paint.Style.FILL);
         paint[0].setColor(Color.RED);
         paint[1].setColor(Color.rgb(0, 180, 0));
@@ -264,6 +326,9 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
         paint[4].setStyle(Paint.Style.STROKE);
         paint[4].setStrokeWidth(2);
         paint[4].setColor(Color.rgb(200,100,40));
+        obstPaint.setStyle(Paint.Style.STROKE);
+        obstPaint.setColor(Color.rgb(180,0,0));
+        obstPaint.setStrokeWidth(3);
         xAxisPaint.setColor(Color.RED);
         xAxisPaint.setStrokeWidth(2);
         zAxisPaint.setColor(Color.BLUE);
@@ -338,9 +403,7 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
 
     @Override
     public void OnRotation(RotationGesture rotationDetector){
-        float rot=rotationDetector.getAngle();
-        transform(0,0,1,rot-mLastRot);
-        mLastRot=rot;
+        transform(0,0,1,rotationDetector.getAngle());
     }
 
     @Override

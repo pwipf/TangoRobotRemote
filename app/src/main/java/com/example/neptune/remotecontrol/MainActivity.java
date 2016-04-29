@@ -228,20 +228,17 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
     }
 
     enum SendDataType{
-        POSITIONROTATION(Type.FLOAT, 4),
-        STRINGCOMMAND(Type.STRING, 0),
-        TARGETADDED(Type.FLOAT, 2),
-        TARGETSCLEARED(Type.NONE, 0),
-        DEPTHDATA(Type.FLOAT,3);
+        POSITIONROTATION(Type.FLOAT,4),
+        STRINGCOMMAND(Type.STRING,0),
+        TARGETADDED(Type.FLOAT,2),
+        TARGETSCLEARED(Type.NONE,0),
+        DEPTHDATA(Type.FLOAT,3),
+        ADDOBSTACLE(Type.FLOAT,2);
         Type type;
         int numVals;
-        SendDataType(Type t, int n){
-            type=t;
-            numVals=n;
-        }
-        enum Type{STRING, FLOAT, NONE}
+        SendDataType(Type t, int n){type=t;numVals=n;}
+        enum Type{STRING,FLOAT,NONE}
     }
-
 
     class ReaderThread implements Runnable{
         public void run(){
@@ -294,6 +291,9 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
                             break;
                         case DEPTHDATA:
                             mMapView.addDepthPt(fdata[0],fdata[1],fdata[2]);
+                            break;
+                        case ADDOBSTACLE:
+                            mMapView.addObstPt(fdata[0],fdata[1]);
                             break;
                         default:
                             Log.e("READTHREAD","default");
