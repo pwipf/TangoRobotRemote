@@ -42,7 +42,8 @@ import java.util.regex.Pattern;
 
 import static com.example.neptune.remotecontrol.StatusFragment.StatusItem;
 
-public class MainActivity extends AppCompatActivity implements SetADFNameDialog.CallbackListener{
+public class MainActivity extends AppCompatActivity implements SetADFNameDialog.CallbackListenerADF,
+                                                    SetLocationNameDialog.CallbackListenerLocation{
 
     Socket mSocket;
 
@@ -66,6 +67,7 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
     boolean mConnecting;//while asynctask is going
 
     Timer mTimer;
+    String mLocationUse="";
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
@@ -123,6 +125,15 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
                 case "Save ADF":
                     showSetADFNameDialog();
                     break;
+                case "Add Location":
+                    mWriter.println("stop");
+                    mLocationUse="Add";
+                    new SetLocationNameDialog().show(getFragmentManager(), "LocationNameDialog");
+                    break;
+                case "Go To Location":
+                    mLocationUse="Go";
+                    new SetLocationNameDialog().show(getFragmentManager(), "LocationNameDialog");
+                    break;
                 default:
                     Log.w("SEND","sending "+command+" "+mWriter.checkError());
                     mWriter.println(command);
@@ -137,13 +148,22 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
         new SetADFNameDialog().show(getFragmentManager(), "ADFNameDialog");
     }
     @Override
-    public void onAdfNameOk(String name, String uuid){
+    public void onAdfNameOk(String name){
         dump("Save ADF"+"%"+name);
         mWriter.println("Save ADF"+"%"+name);
     }
-
     @Override
-    public void onAdfNameCancelled(){
+    public void onLocationNameOk(String name){
+        switch(mLocationUse){
+            case "Add":
+                dump("Add Location" + "%" + name);
+                mWriter.println("Save Location" + "%" + name);
+                break;
+            case "Go":
+                dump("Go Location" + "%" + name);
+                mWriter.println("Go To Location" + "%" + name);
+                break;
+        }
     }
 
     void disconnect(){
@@ -230,14 +250,14 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
     enum SendDataType{
         POSITIONROTATION(Type.FLOAT,4),
         STRINGCOMMAND(Type.STRING,0),
-        TARGETADDED(Type.FLOAT,2),
+        TARGETADDED(Type.BOTH,2),
         TARGETSCLEARED(Type.NONE,0),
         DEPTHDATA(Type.FLOAT,3),
         ADDOBSTACLE(Type.FLOAT,2);
         Type type;
         int numVals;
         SendDataType(Type t, int n){type=t;numVals=n;}
-        enum Type{STRING,FLOAT,NONE}
+        enum Type{STRING,FLOAT,NONE,BOTH}
     }
 
     class ReaderThread implements Runnable{
@@ -255,9 +275,10 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
                     if(code<0 || code>SendDataType.values().length)
                         return;
 
+                    int n,len;
                     switch(SendDataType.values()[code].type){
                         case STRING:
-                            int len=mReader.readInt();
+                            len=mReader.readInt();
                             if(len>100)//probably error
                                 return;
                             sdata=new byte[len];
@@ -265,12 +286,26 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
                             break;
 
                         case FLOAT:
-                            int n=SendDataType.values()[code].numVals;
+                            n=SendDataType.values()[code].numVals;
                             fdata=new float[n];
                             for(int i=0; i<n; i++){
                                 fdata[i]=mReader.readFloat();
                             }
                             break;
+
+                        case BOTH:
+                            n=SendDataType.values()[code].numVals;
+                            fdata=new float[n];
+                            for(int i=0; i<n; i++){
+                                fdata[i]=mReader.readFloat();
+                            }
+
+                            len=mReader.readInt();
+                            if(len>100)//probably error
+                                return;
+                            sdata=new byte[len];
+                            mReader.readFully(sdata, 0, len);
+
                     }
 
                     switch(SendDataType.values()[code]){
@@ -284,7 +319,7 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
                             continue;
 
                         case TARGETADDED:
-                            mMapView.addTarget(fdata[0],fdata[1],Color.MAGENTA);
+                            mMapView.addTarget(fdata[0],fdata[1],new String(sdata));
                             break;
                         case TARGETSCLEARED:
                             mMapView.clearTargets();
@@ -347,6 +382,20 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
                     }
                 }
             }else{
+                switch(s){
+                    case "Clear Obstacles":
+                        mMapView.clearObstacles();
+                        break;
+                    case "Clear Targets":
+                        mMapView.clearTargets();
+                        break;
+                    case "Clear Path":
+                        break;
+                    case "Added Location":
+
+                        break;
+                }
+
                 dump("   >" + s);
             }
         }

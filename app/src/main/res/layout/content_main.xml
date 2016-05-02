@@ -56,7 +56,7 @@
 
         </LinearLayout>
 
-        <FrameLayout
+        <RelativeLayout
             android:id="@+id/frameRight"
             android:layout_weight="1"
             android:layout_width="0dp"
@@ -65,7 +65,58 @@
                 android:id="@+id/imageMap"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"/>
-        </FrameLayout>
+
+
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentBottom="true">
+
+                <LinearLayout
+                    android:layout_marginBottom="10dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+                    <Button
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="10dp"
+                        android:layout_marginRight="10dp"
+                        android:background="@drawable/custbut"
+                        android:onClick="onCommandClick"
+                        android:text="Depth On"/>
+
+                    <Button
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="10dp"
+                        android:layout_marginRight="10dp"
+                        android:background="@drawable/custbut"
+                        android:onClick="onCommandClick"
+                        android:text="Depth Off"/>
+
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <Button
+                        android:id="@+id/buttonClearAll"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="10dp"
+                        android:layout_marginRight="10dp"
+                        android:background="@drawable/custbut"
+                        android:onClick="onCommandClick"
+                        android:text="Clear All"/>
+                 </LinearLayout>
+
+            </LinearLayout>
+
+        </RelativeLayout>
 
 
     </LinearLayout>
@@ -159,6 +210,15 @@
         android:layout_alignParentRight="true"
         android:layout_marginTop="5dp"
         android:layout_alignParentTop="true">
+        <Button
+            android:id="@+id/buttonAddLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:background="@drawable/custbut"
+            android:onClick="onCommandClick"
+            android:text="Add Location"/>
 
         <Button
             android:id="@+id/buttonGo"
@@ -177,23 +237,32 @@
             android:onClick="onCommandClick"
             android:text="End Path"/>
 
-        <Button
-            android:id="@+id/buttonClearTargets"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="10dp"
-            android:background="@drawable/custbut"
-            android:onClick="onCommandClick"
-            android:text="Trace Path Forward"/>
+        <!--<Button-->
+            <!--android:id="@+id/buttonClearTargets"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_marginLeft="10dp"-->
+            <!--android:background="@drawable/custbut"-->
+            <!--android:onClick="onCommandClick"-->
+            <!--android:text="Trace Path Forward"/>-->
 
         <Button
-            android:id="@+id/buttonSetTarget"
+            android:id="@+id/buttonGoToLocation"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="10dp"
             android:background="@drawable/custbut"
             android:onClick="onCommandClick"
-            android:text="Trace Path Reverse"/>
+            android:text="Go To Location"/>
+
+        <!--<Button-->
+            <!--android:id="@+id/buttonSetTarget"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_marginLeft="10dp"-->
+            <!--android:background="@drawable/custbut"-->
+            <!--android:onClick="onCommandClick"-->
+            <!--android:text="Trace Path Reverse"/>-->
         <Button
             android:id="@+id/buttonSaveADF"
             android:layout_width="wrap_content"

@@ -36,7 +36,7 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     float mAspect;
     float mRot;
     Matrix mWorldToScreen=new Matrix();
-    float mScale=120;
+    float mScale=1;
 
     Matrix mScreenToWorld=new Matrix();
     Matrix mScreenScaleToWorld=new Matrix();
@@ -48,17 +48,18 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     Paint mWheelPaint=new Paint();
     Paint mBlackPaint=new Paint();
     Paint obstPaint=new Paint();
+    Paint mTargetPaint=new Paint();
     Matrix mRobotModel=new Matrix();
     float mRoboX,mRoboY,mRoboRot;
     float[] mRoboPts={1, 1, -1, 1, -1, 1, 0, -1, 0, -1, 1, 1, -1.1f, .4f, 1.1f, .4f,
             -1.1f, .9f, -1.1f, -.1f, 1.1f, .9f, 1.1f, -.1f};
     float[] mRoboPtsBuf=new float[mRoboPts.length];
 
-    ArrayList<PointColor> mTargets=new ArrayList<>();
-    ArrayList<Integer> mTargetCol=new ArrayList<>();
-    //ArrayList<PointF> mDepthPts=new ArrayList<>();
-    static final int NDEPTHPTS=9*9 ;
-    float[] mDepthPts=new float[NDEPTHPTS*2];
+    ArrayList<PointF> mTargets=new ArrayList<>();
+    ArrayList<String> mTargetNames=new ArrayList<>();
+
+    static final int NDEPTHPTS=9 ;
+    PointF[] mDepthPts=new PointF[NDEPTHPTS];
     float[] mDepthPtsBuf=new float[NDEPTHPTS*2];
     float[] mDepthValue=new float[NDEPTHPTS];
     int mDepthIndex=0;
@@ -73,16 +74,6 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
 
     private static final int NUM_PAINTS=10;
     Paint paint[]=new Paint[NUM_PAINTS];
-
-    class PointColor{
-        PointF pt;
-        Integer col;
-
-        PointColor(PointF pt, Integer col){
-            this.pt=pt;
-            this.col=col;
-        }
-    }
 
 
     public void clearObstacles(){
@@ -128,22 +119,28 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
         //canvas.drawPoints(obstBuf,obstPaint);
     }
 
-    public void addTarget(float x, float y, Integer col){
-        mTargets.add(new PointColor(new PointF(x, y), col));
+    public void addTarget(float x, float y, String name){
+        mTargets.add(new PointF(x, y));
+        mTargetNames.add(name);
         postInvalidate();
+    }
+    public void drawTargets(Canvas canvas){
+        int n=1;
+        for(PointF pt :mTargets){
+            PointF dp = toDevice(pt);
+            canvas.drawCircle(dp.x,dp.y,5,mTargetPaint);
+            canvas.drawText(mTargetNames.get(n-1),dp.x+5,dp.y+5,zAxisPaint);
+            n++;
+        }
     }
 
     public void addDepthPt(float u,float v,float z){//float[3]
-        float perspFact=.5f;
-        float gridOffset=.8f;
-        v=1-v;
-        PointF pt=new PointF();
-        pt.y=(v-.5f) +gridOffset;
-        pt.x=(u-.5f)*(1+ v*perspFact);
-        mDepthPts[mDepthIndex*2]=pt.x;
-        mDepthPts[mDepthIndex*2+1]=pt.y;
-        mDepthValue[mDepthIndex]=z;
-        mDepthIndex++; if(mDepthIndex==mDepthValue.length) mDepthIndex=0;
+        //float perspFact=.5f;
+        //float gridOffset=.8f;
+        //v=1-v;
+        mDepthPts[mDepthIndex] = new PointF(u-.5f, z);
+        mDepthValue[mDepthIndex] = z;
+        mDepthIndex++;if(mDepthIndex==NDEPTHPTS)mDepthIndex=0;
         postInvalidate();
 
         //Log.e("NUM",pt.x+" "+pt.y);
@@ -164,23 +161,24 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     }
 
     private void drawDepthPts(Canvas canvas){
-        mRobotModel.mapPoints(mDepthPtsBuf,mDepthPts);
-        mWorldToScreen.mapPoints(mDepthPtsBuf);
-        for(int i=0;i<mDepthValue.length;i++){
-            paint[4].setColor(Color.rgb(0,150,100));
+        float diam = 6*mScale;
+        paint[4].setColor(Color.rgb(0,150,100));
+
+        for(int i=0;i<NDEPTHPTS;i++){
+            float[] fpt = {mDepthPts[i].x, mDepthPts[i].y};
+            mRobotModel.mapPoints(fpt);
+            mWorldToScreen.mapPoints(fpt);
             float d=mDepthValue[i]*5;
-            if(d==0) {
-                d = 1;
+            if(d==0){
                 paint[4].setColor(Color.BLACK);
             }
-            else
-                d=Math.min(Math.max(d,2),14);
-            canvas.drawCircle(mDepthPtsBuf[i*2],mDepthPtsBuf[i*2+1], d, paint[4]);
+            canvas.drawCircle(fpt[0], fpt[1], diam, paint[4]);
         }
    }
 
     public void clearTargets(){
         mTargets.clear();
+        mTargetNames.clear();
         postInvalidate();
     }
 
@@ -215,12 +213,7 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
         drawRobot(canvas);
         canvas.drawLine(1, 1, 1, mSize.y - 1, mBlackPaint);
 
-        for(int i=0;i<mTargets.size();i++){
-            PointF dp=toDevice(mTargets.get(i).pt);
-            paint[0].setColor(mTargets.get(i).col);
-            canvas.drawCircle(dp.x, dp.y, 5, paint[0]);
-            canvas.drawText(""+(i+1),dp.x+5,dp.y+5,zAxisPaint);
-        }
+        drawTargets(canvas);
 
         drawDepthPts(canvas);
         drawObstPts(canvas);
@@ -311,6 +304,8 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
         //this.setOnTouchListener(this);
         for(int i=0; i<NUM_PAINTS; i++)
             paint[i]=new Paint();
+        for (int i = 0; i < NDEPTHPTS; i++)
+            mDepthPts[i] = new PointF();
         for(int i=0;i<mRoboPts.length;i++)
             mRoboPts[i]*=.1f;
         paint[0].setStyle(Paint.Style.FILL);
@@ -339,6 +334,8 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
         mWheelPaint.setStrokeWidth(4);
         mBlackPaint.setColor(Color.BLACK);
         mBlackPaint.setStrokeWidth(2);
+        mTargetPaint.setColor(Color.MAGENTA);
+        mTargetPaint.setStyle(Paint.Style.FILL);
         setRobot(1, 1, -30);
     }
 

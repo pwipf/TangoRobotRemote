@@ -30,27 +30,27 @@ import android.widget.TextView;
 /**
  * Queries the user for an ADF name, optionally showing the ADF UUID.
  */
-public class SetADFNameDialog extends DialogFragment implements OnClickListener {
+public class SetLocationNameDialog extends DialogFragment implements OnClickListener {
 
     EditText mNameEditText;
     TextView mUUIDTextView;
-    CallbackListenerADF mCallbackListener;
+    CallbackListenerLocation mCallbackListener;
 
-    interface CallbackListenerADF {
-        public void onAdfNameOk(String name);
+    interface CallbackListenerLocation {
+        public void onLocationNameOk(String name);
     }
 
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
-        mCallbackListener = (CallbackListenerADF) activity;
+        mCallbackListener = (CallbackListenerLocation) activity;
     }
 
     @Override
     public View onCreateView(LayoutInflater inflator, ViewGroup container,
                              Bundle savedInstanceState) {
         View dialogView = inflator.inflate(R.layout.set_name_dialog, null);
-        getDialog().setTitle("Name of ADF");
+        getDialog().setTitle("Name of Location");
         mNameEditText = (EditText) dialogView.findViewById(R.id.name);
         mUUIDTextView = (TextView) dialogView.findViewById(R.id.uuidDisplay);
         dialogView.findViewById(R.id.Ok).setOnClickListener(this);
@@ -63,7 +63,7 @@ public class SetADFNameDialog extends DialogFragment implements OnClickListener 
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.Ok:
-                mCallbackListener.onAdfNameOk(
+                mCallbackListener.onLocationNameOk(
                         mNameEditText.getText().toString());
                 dismiss();
                 break;
