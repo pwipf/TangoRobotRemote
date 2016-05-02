@@ -58,13 +58,13 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     ArrayList<PointF> mTargets=new ArrayList<>();
     ArrayList<String> mTargetNames=new ArrayList<>();
 
-    static final int NDEPTHPTS=9 ;
+    static final int NDEPTHPTS=7 ;
     PointF[] mDepthPts=new PointF[NDEPTHPTS];
     float[] mDepthPtsBuf=new float[NDEPTHPTS*2];
     float[] mDepthValue=new float[NDEPTHPTS];
     int mDepthIndex=0;
 
-    static final int NOBSTPTS=2000;
+    static final int NOBSTPTS=30;
     float[] obstPt = new float[NOBSTPTS];
     float[] obstBuf = new float[NOBSTPTS];
     int nObstPt,nObstPtUsed;
@@ -84,23 +84,7 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
 
     public void addObstPt(float x,float z){
         float[] t={x,z};
-        //mRobotModelInverse.mapPoints(t);
-//        mWorldInverse.mapPoints(t);
-        //mRobotModelInverse.mapPoints(t);
 
-        //search if point is already in list
-        boolean found=false;
-        float thresh=.07f;
-        for(int i=0;i<obstPt.length/2;i++){
-            float tx=obstPt[i*2];
-            float ty=obstPt[i*2+1];
-            if(Math.abs(tx-t[0])<thresh && Math.abs(ty-t[1])<thresh){
-                found=true;
-                break;
-            }
-        }
-
-        if(!found) {
             obstPt[nObstPt * 2] = t[0];
             obstPt[nObstPt * 2 + 1] = t[1];
             nObstPt++;
@@ -109,7 +93,7 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
 
             nObstPtUsed++;
             nObstPtUsed=Math.min(nObstPtUsed,obstPt.length/2);
-        }
+
     }
     private void drawObstPts(Canvas canvas){
         mWorldToScreen.mapPoints(obstBuf,obstPt);
@@ -138,7 +122,7 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
         //float perspFact=.5f;
         //float gridOffset=.8f;
         //v=1-v;
-        mDepthPts[mDepthIndex] = new PointF(u-.5f, z);
+        mDepthPts[mDepthIndex] = new PointF(u, z);
         mDepthValue[mDepthIndex] = z;
         mDepthIndex++;if(mDepthIndex==NDEPTHPTS)mDepthIndex=0;
         postInvalidate();
