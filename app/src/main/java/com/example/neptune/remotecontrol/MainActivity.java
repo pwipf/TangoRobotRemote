@@ -143,6 +143,14 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
                     //recognizeSpeech("What location");
                     mWriter.println(command);
                     break;
+                case "Depth On":
+                    mMapView.mDepthOn=true;
+                    mWriter.println(command);
+                    break;
+                case "Depth Off":
+                    mMapView.mDepthOn=false;
+                    mWriter.println(command);
+                    break;
                 default:
                     Log.w("SEND","sending "+command+" "+mWriter.checkError());
                     mWriter.println(command);
@@ -432,6 +440,12 @@ public class MainActivity extends AppCompatActivity implements SetADFNameDialog.
                         break;
                     case "Added Location":
 
+                        break;
+                    case "Depth On":
+                        mMapView.mDepthOn=true;
+                        break;
+                    case "Depth Off":
+                        mMapView.mDepthOn=false;
                         break;
                 }
 
