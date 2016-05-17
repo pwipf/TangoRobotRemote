@@ -45,6 +45,10 @@ public class StatusFragment extends Fragment{
     //constructor
 
     private static void setItem(StatusItem item, String string){
+        if(mViews[item.ordinal()]==null){
+            Log.i("STATUSFRAGMENT","setItem "+item+" view still null");
+            return;
+        }
         mViews[item.ordinal()].setTextColor(string.equals(item.compare)? item.color1 : item.color2);
         mViews[item.ordinal()].setText(string);
         item.currentString=string;

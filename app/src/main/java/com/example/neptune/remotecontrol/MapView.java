@@ -63,6 +63,7 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
     float[] mDepthPtsBuf=new float[NDEPTHPTS*2];
     float[] mDepthValue=new float[NDEPTHPTS];
     int mDepthIndex=0;
+    boolean mDepthOn=false;
 
     static final int NOBSTPTS=30;
     float[] obstPt = new float[NOBSTPTS];
@@ -199,7 +200,8 @@ public class MapView extends View implements RotationGesture.OnRotationListener,
 
         drawTargets(canvas);
 
-        drawDepthPts(canvas);
+        if(mDepthOn)
+            drawDepthPts(canvas);
         drawObstPts(canvas);
     }
 
